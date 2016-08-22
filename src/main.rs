@@ -1,4 +1,5 @@
 use std::cmp;
+use std::fmt;
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 /// Represents a u32 that is fixed to be between 0 and some max value.
@@ -50,27 +51,42 @@ impl SubAssign<u32> for BoundedNumber {
     }
 }
 
+impl fmt::Display for BoundedNumber {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}/{}", self.val, self.max)
+    }
+}
+
 
 
 #[derive(Debug)]
 struct Character {
+    name: String,
     hp: BoundedNumber,
     mp: BoundedNumber,
 }
 
 
 impl Character {
-    fn new() -> Character {
+    fn new(name: &str) -> Character {
         Character {
+            name: String::from(name),
             hp: BoundedNumber::new(10),
             mp: BoundedNumber::new(10),
         }
     }
 }
 
+impl fmt::Display for Character {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Name: {}, HP: {}, MP: {}", self.name, self.hp, self.mp)
+    }
+}
+
+
 fn main() {
-    let mut c = Character::new();
-    println!("Hello, world! {:?}", c);
+    let mut c = Character::new("Ragnar");
+    println!("Hello, world! {}", c);
     c.hp -= 12;
-    println!("Bye world! {:?}", c);
+    println!("Bye world! {}", c);
 }
