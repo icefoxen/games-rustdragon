@@ -83,10 +83,62 @@ impl fmt::Display for Character {
     }
 }
 
+enum Action<'a> {
+    Attack(&'a Character, &'a Character),
+    Defend(&'a Character),
+    None
+}
+
+/// The central structure containing a battle's state.
+#[derive(Debug)]
+struct Battlefield {
+    chars: Vec<Character>,
+    mobs: Vec<Character>,
+    round: i32,
+}
+
+impl fmt::Display for Battlefield {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Round {}", self.round).unwrap();
+        writeln!(f, "Characters:").unwrap();
+        for chr in &self.chars {
+            writeln!(f, "  {}", chr).unwrap();
+        };
+        writeln!(f, "Mobs:").unwrap();
+        for mob in &self.mobs {
+            writeln!(f, "  {}", mob).unwrap();
+        }
+        writeln!(f, "")
+    }
+}
+
+
+fn run_action<'a>(field: &'a Battlefield, action: &Action) -> &'a Battlefield {
+    field
+}
+
+/// Runs a single turn in the battle.
+/// It takes a battlefield state, and a list of actions
+/// and applies the actions in order.
+/// It returns a new Battlefield state
+/// Do we want this mutable or not?
+fn run_turn<'a>(field: &'a Battlefield, actions: Vec<Action>) -> &'a Battlefield {
+    actions.iter()
+        .fold(field, run_action)
+}
+
 
 fn main() {
-    let mut c = Character::new("Ragnar");
-    println!("Hello, world! {}", c);
-    c.hp -= 12;
-    println!("Bye world! {}", c);
+    let c = Character::new("Ragnar");
+    let s = Character::new("Slime");
+    let b = Battlefield {
+        chars: vec![c],
+        mobs: vec![s],
+        round: 1
+    };
+    let b_ = run_turn(&b, vec![Action::None, Action::None]);
+    println!("Battlefield: {}", b_);
+    //println!("Hello, world! {}", c);
+    //c.hp -= 12;
+    //println!("Bye world! {}", c);
 }
