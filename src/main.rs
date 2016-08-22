@@ -57,6 +57,17 @@ impl fmt::Display for BoundedNumber {
     }
 }
 
+#[test]
+fn bounded_number_is_bounded() {
+    let max = 100;
+    let x = BoundedNumber::new(max);
+    assert!(x.val == max);
+    let y = x + 100;
+    assert!(y.val == max);
+    let z = x - 9999;
+    assert!(z.val == 0);
+}
+
 
 
 #[derive(Debug, Clone)]
