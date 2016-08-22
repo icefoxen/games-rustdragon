@@ -125,26 +125,22 @@ impl fmt::Display for Battlefield {
 }
 
 impl Battlefield {
-    fn update_char(&self, char: &Character) -> &Battlefield {
-        self
-    }
-
     fn increment_round(self) -> Battlefield {
         Battlefield { round: self.round + 1, .. self }
     }
 }
 
-fn do_attack<'a>(field: &'a Battlefield, from: &Character, to: &Character) -> &'a Battlefield {
+fn do_attack(field: Battlefield, from: &Character, to: &Character) -> Battlefield {
     println!("{} attacked {}!", from.name, to.name);
     field
 }
 
-fn do_defend<'a>(field: &'a Battlefield, who: &Character) -> &'a Battlefield {
+fn do_defend(field: Battlefield, who: &Character) -> Battlefield {
     println!("{} defended themselves!", who.name);
     field
 }
 
-fn do_none<'a>(field: &'a Battlefield) -> &'a Battlefield {
+fn do_none(field: Battlefield) -> Battlefield {
     println!("Nothing happened!");
     field
 }
@@ -152,9 +148,9 @@ fn do_none<'a>(field: &'a Battlefield) -> &'a Battlefield {
 
 fn run_action(field: Battlefield, action: &Action) -> Battlefield {
     let f = match *action {
-        Action::Attack(from, to) => do_attack(&field, from, to),
-        Action::Defend(who) => do_defend(&field, who),
-        Action::None => do_none(&field),
+        Action::Attack(from, to) => do_attack(field, from, to),
+        Action::Defend(who) => do_defend(field, who),
+        Action::None => do_none(field),
     };
     f.clone()
 }
@@ -181,6 +177,7 @@ fn main() {
     };
     let a1 = Action::Attack(&b.chars[0], &b.mobs[0]);
     let a2 = Action::Defend(&b.mobs[0]);
+    println!("Battlefield: {}", b);
     let b_ = run_turn(b.clone(), vec![a1, a2]);
     println!("Battlefield: {}", b_);
     //println!("Hello, world! {}", c);
