@@ -59,7 +59,7 @@ impl fmt::Display for BoundedNumber {
 
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Character {
     name: String,
     hp: BoundedNumber,
@@ -90,11 +90,11 @@ enum Action<'a> {
 }
 
 /// The central structure containing a battle's state.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Battlefield {
     chars: Vec<Character>,
     mobs: Vec<Character>,
-    round: i32,
+    round: u32,
 }
 
 impl fmt::Display for Battlefield {
@@ -110,6 +110,16 @@ impl fmt::Display for Battlefield {
             try!(writeln!(f, "  {}", mob));
         }
         writeln!(f, "")
+    }
+}
+
+impl Battlefield {
+    fn update_char(&self, char: &Character) -> &Battlefield {
+        self
+    }
+
+    fn increment_round(self) -> Battlefield {
+        Battlefield { round: self.round + 1, .. self }
     }
 }
 
@@ -129,12 +139,13 @@ fn do_none<'a>(field: &'a Battlefield) -> &'a Battlefield {
 }
 
 
-fn run_action<'a>(field: &'a Battlefield, action: &Action) -> &'a Battlefield {
-    match *action {
-        Action::Attack(from, to) => do_attack(field, from, to),
-        Action::Defend(who) => do_defend(field, who),
-        Action::None => do_none(field),
-    }
+fn run_action(field: Battlefield, action: &Action) -> Battlefield {
+    let f = match *action {
+        Action::Attack(from, to) => do_attack(&field, from, to),
+        Action::Defend(who) => do_defend(&field, who),
+        Action::None => do_none(&field),
+    };
+    f.clone()
 }
 
 /// Runs a single turn in the battle.
@@ -142,9 +153,10 @@ fn run_action<'a>(field: &'a Battlefield, action: &Action) -> &'a Battlefield {
 /// and applies the actions in order.
 /// It returns a new Battlefield state
 /// Do we want this mutable or not?
-fn run_turn<'a>(field: &'a Battlefield, actions: Vec<Action>) -> &'a Battlefield {
-    actions.iter()
-        .fold(field, run_action)
+fn run_turn(field: Battlefield, actions: Vec<Action>) -> Battlefield {
+    let f = actions.iter()
+        .fold(field, run_action);
+    f.increment_round()
 }
 
 
@@ -158,7 +170,7 @@ fn main() {
     };
     let a1 = Action::Attack(&b.chars[0], &b.mobs[0]);
     let a2 = Action::Defend(&b.mobs[0]);
-    let b_ = run_turn(&b, vec![a1, a2]);
+    let b_ = run_turn(b.clone(), vec![a1, a2]);
     println!("Battlefield: {}", b_);
     //println!("Hello, world! {}", c);
     //c.hp -= 12;
