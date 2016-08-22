@@ -99,22 +99,42 @@ struct Battlefield {
 
 impl fmt::Display for Battlefield {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "Round {}", self.round).unwrap();
-        writeln!(f, "Characters:").unwrap();
+
+        try!(writeln!(f, "Round {}", self.round));
+        try!(writeln!(f, "Characters:"));
         for chr in &self.chars {
-            writeln!(f, "  {}", chr).unwrap();
+            try!(writeln!(f, "  {}", chr));
         };
-        writeln!(f, "Mobs:").unwrap();
+        try!(writeln!(f, "Mobs:"));
         for mob in &self.mobs {
-            writeln!(f, "  {}", mob).unwrap();
+            try!(writeln!(f, "  {}", mob));
         }
         writeln!(f, "")
     }
 }
 
+fn do_attack<'a>(field: &'a Battlefield, from: &Character, to: &Character) -> &'a Battlefield {
+    println!("{} attacked {}!", from.name, to.name);
+    field
+}
+
+fn do_defend<'a>(field: &'a Battlefield, who: &Character) -> &'a Battlefield {
+    println!("{} defended themselves!", who.name);
+    field
+}
+
+fn do_none<'a>(field: &'a Battlefield) -> &'a Battlefield {
+    println!("Nothing happened!");
+    field
+}
+
 
 fn run_action<'a>(field: &'a Battlefield, action: &Action) -> &'a Battlefield {
-    field
+    match *action {
+        Action::Attack(from, to) => do_attack(field, from, to),
+        Action::Defend(who) => do_defend(field, who),
+        Action::None => do_none(field),
+    }
 }
 
 /// Runs a single turn in the battle.
@@ -136,7 +156,9 @@ fn main() {
         mobs: vec![s],
         round: 1
     };
-    let b_ = run_turn(&b, vec![Action::None, Action::None]);
+    let a1 = Action::Attack(&b.chars[0], &b.mobs[0]);
+    let a2 = Action::Defend(&b.mobs[0]);
+    let b_ = run_turn(&b, vec![a1, a2]);
     println!("Battlefield: {}", b_);
     //println!("Hello, world! {}", c);
     //c.hp -= 12;
