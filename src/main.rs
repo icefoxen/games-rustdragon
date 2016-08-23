@@ -6,7 +6,7 @@ extern crate rand;
 use rand::random;
 
 /// Represents a u32 that is fixed to be between 0 and some max value.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 struct BoundedNumber {
     val: u32,
     max: u32,
@@ -73,7 +73,7 @@ fn bounded_number_is_bounded() {
 
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct Character {
     name: String,
     hp: BoundedNumber,
@@ -161,11 +161,36 @@ impl Battlefield {
     }
 
     fn remove_char(self, c: &Character) -> Battlefield {
-        self
+        // This is messy but any alternative is also messy it seems, so.
+        if self.chars.contains(c) {
+            let mut chars = self.chars.clone();
+            chars.retain(|ch| ch != c);
+            Battlefield { chars: chars, .. self }
+        } else if self.mobs.contains(c) {
+            let mut mobs = self.mobs.clone();
+            mobs.retain(|ch| ch != c);
+            Battlefield { mobs: mobs, .. self }
+        } else {
+            panic!("Aieee!  Tried to remove nonexistent character!")
+        }
     }
 
     fn replace_char(self, c: &Character, with: &Character) -> Battlefield {
-        self
+        if self.chars.contains(c) {
+            let mut chars = self.chars.clone();
+            let pos = chars.iter().position(|ch| ch == c);
+            pos.and_then(|pos| Some(chars[pos] = with.clone()));
+            //chars[pos] = with;
+            Battlefield { chars: chars, .. self }
+        } else if self.mobs.contains(c) {
+            let mut mobs = self.mobs.clone();
+            let pos = mobs.iter().position(|ch| ch == c);
+            pos.and_then(|pos| Some(mobs[pos] = with.clone()));
+            Battlefield { mobs: mobs, .. self }
+        } else {
+            panic!("Aieee!  Tried to remove nonexistent character!")
+        }
+
     }
 }
 
