@@ -71,13 +71,19 @@ fn bounded_number_is_bounded() {
     assert!(z.val == 0);
 }
 
-
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Team {
+    Player,
+    Monster
+}
 
 #[derive(Debug, Clone, PartialEq)]
 struct Character {
     name: String,
     hp: BoundedNumber,
     mp: BoundedNumber,
+
+    team: Team,
 
     // Stats.
     // Attack, how much damage you do
@@ -92,11 +98,13 @@ struct Character {
 
 
 impl Character {
-    fn new(name: &str) -> Character {
+    fn new(name: &str, team: Team) -> Character {
         Character {
             name: String::from(name),
             hp: BoundedNumber::new(10),
             mp: BoundedNumber::new(10),
+
+            team: team,
 
             atk: 10,
             def: 10,
@@ -117,7 +125,7 @@ impl Character {
 
 #[test]
 fn random_char_methods() {
-    let mut c = Character::new("Bob");
+    let mut c = Character::new("Bob", Team::Monster);
     assert!(c.is_alive());
     c.take_damage(1_000_000);
     assert!(!c.is_alive());
@@ -154,16 +162,17 @@ impl fmt::Display for Battlefield {
 
         try!(writeln!(f, "Round {}", self.round));
         try!(writeln!(f, "Characters:"));
-        for chr in &self.chars {
+        for chr in self.players() {
             try!(writeln!(f, "  {}", chr));
         };
-        //try!(writeln!(f, "Mobs:"));
-        //for mob in &self.mobs {
-        //    try!(writeln!(f, "  {}", mob));
-        //}
+        try!(writeln!(f, "Monsters:"));
+        for mob in self.monsters() {
+            try!(writeln!(f, "  {}", mob));
+        };
         write!(f, "")
     }
 }
+
 
 impl Battlefield {
     fn new() -> Battlefield {
@@ -182,6 +191,38 @@ impl Battlefield {
 
     fn get_mut<'a>(&'a mut self, c: CharSpecifier) -> Option<&'a mut Character> {
         self.chars.get_mut(c as usize)
+    }
+
+    // This is insane.
+    // Never touch it.  The type system will eat you alive.
+    // You can't define types from closures.  That's the first hiccup.
+    // The type of Filter is crazy.  That's the second hiccup.
+    // I still have no idea why this needs a &&Character instead of just a &Character.
+    // Third, the Filter borrows the thing it's filtering, which makes the lifetimes squirrelly.
+    // impl Trait is currently in nightly, and once that's useable we'll be able to make this:
+    // fn players<'a>(&'a self) ->
+    //    impl Iterator<Item=&'a Character> {
+    //        self.chars.iter().filter(|chr| chr.team == Team::Player)
+    //  } 
+    fn players<'a>(&'a self) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+        // Booooo returning the results of filter() is dumb
+        // 'cause you can't specify types of closures.
+        // Though apparently there's a feature in nightly
+        // as of August 2016 that allows you to specify a
+        // trait return value rather than a specific type
+        // And you can't use instance methods as if they
+        // were class methods, either.
+        fn is_player(p: &&Character) -> bool {
+            p.team == Team::Player
+        }
+        self.chars.iter().filter(is_player)
+    }
+
+    fn monsters<'a>(&'a self) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+        fn is_monster(p: &&Character) -> bool {
+            p.team == Team::Monster
+        }
+        self.chars.iter().filter(is_monster)
     }
 }
 
@@ -265,9 +306,9 @@ fn run_turn(field: &mut Battlefield, actions: Vec<Action>) {
 
 
 fn main() {
-    let c1 = Character::new("Ragnar");
-    let c2 = Character::new("Alena");
-    let s = Character::new("Slime");
+    let c1 = Character::new("Ragnar", Team::Player);
+    let c2 = Character::new("Alena", Team::Player);
+    let s = Character::new("Slime", Team::Monster);
     let mut b = Battlefield {
         chars: vec![c1, c2, s],
         round: 1
