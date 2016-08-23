@@ -88,7 +88,6 @@ struct Character {
     spd: u32,
     // Luck, determines critical hit chance
     lck: u32,
-
 }
 
 
@@ -111,11 +110,8 @@ impl Character {
         self.hp.val > 0
     }
 
-    fn take_damage(self, damage: u32) -> Character {
-        Character {
-            hp: self.hp - damage,
-            .. self
-        }
+    fn take_damage(&mut self, damage: u32) {
+        self.hp -= damage;
     }
 }
 
@@ -125,9 +121,17 @@ impl fmt::Display for Character {
     }
 }
 
-enum Action<'a> {
-    Attack(&'a Character, &'a Character),
-    Defend(&'a Character),
+/// A structure that specifies a specific character in a Battlefield.
+type CharSpecifier = u32;
+
+
+// The Character direct references here are bad and wrong,
+// because what happens if a character dies before an attack goes off?
+// They need to be some sort of indirect reference so we can check
+// whether or not it's valid.
+enum Action {
+    Attack(CharSpecifier, CharSpecifier),
+    Defend(CharSpecifier),
     None
 }
 
@@ -135,7 +139,6 @@ enum Action<'a> {
 #[derive(Debug, Clone)]
 struct Battlefield {
     chars: Vec<Character>,
-    mobs: Vec<Character>,
     round: u32,
 }
 
@@ -147,108 +150,122 @@ impl fmt::Display for Battlefield {
         for chr in &self.chars {
             try!(writeln!(f, "  {}", chr));
         };
-        try!(writeln!(f, "Mobs:"));
-        for mob in &self.mobs {
-            try!(writeln!(f, "  {}", mob));
-        }
+        //try!(writeln!(f, "Mobs:"));
+        //for mob in &self.mobs {
+        //    try!(writeln!(f, "  {}", mob));
+        //}
         write!(f, "")
     }
 }
 
 impl Battlefield {
-    fn increment_round(self) -> Battlefield {
-        Battlefield { round: self.round + 1, .. self }
+    fn increment_round(&mut self) {
+        self.round += 1
     }
 
-    fn remove_char(self, c: &Character) -> Battlefield {
-        // This is messy but any alternative is also messy it seems, so.
-        if self.chars.contains(c) {
-            let mut chars = self.chars.clone();
-            chars.retain(|ch| ch != c);
-            Battlefield { chars: chars, .. self }
-        } else if self.mobs.contains(c) {
-            let mut mobs = self.mobs.clone();
-            mobs.retain(|ch| ch != c);
-            Battlefield { mobs: mobs, .. self }
-        } else {
-            panic!("Aieee!  Tried to remove nonexistent character!")
-        }
+    fn get<'a>(&'a self, c: CharSpecifier) -> Option<&'a Character> {
+        self.chars.get(c as usize)
     }
 
-    fn replace_char(self, c: &Character, with: &Character) -> Battlefield {
-        if self.chars.contains(c) {
-            let mut chars = self.chars.clone();
-            let pos = chars.iter().position(|ch| ch == c);
-            pos.and_then(|pos| Some(chars[pos] = with.clone()));
-            //chars[pos] = with;
-            Battlefield { chars: chars, .. self }
-        } else if self.mobs.contains(c) {
-            let mut mobs = self.mobs.clone();
-            let pos = mobs.iter().position(|ch| ch == c);
-            pos.and_then(|pos| Some(mobs[pos] = with.clone()));
-            Battlefield { mobs: mobs, .. self }
-        } else {
-            panic!("Aieee!  Tried to replace nonexistent character!")
-        }
-
+    fn get_mut<'a>(&'a mut self, c: CharSpecifier) -> Option<&'a mut Character> {
+        self.chars.get_mut(c as usize)
     }
+
+    // fn remove_char(self, c: &Character) -> Battlefield {
+    //     // This is messy but any alternative is also messy it seems, so.
+    //     if self.chars.conta) {
+    //         let mut chars = self.chars.clone();
+    //         chars.retain(|ch| ch != c);
+    //         Battlefield { chars: chars, .. self }
+    //     } else if self.mobs.contains(c) {
+    //         let mut mobs = self.mobs.clone();
+    //         mobs.retain(|ch| ch != c);
+    //         Battlefield { mobs: mobs, .. self }
+    //     } else {
+    //         panic!("Aieee!  Tried to remove nonexistent character!")
+    //     }
+    // }
+
+    // fn replace_char(self, c: &Character, with: &Character) -> Battlefield {
+    //     if self.chars.contains(c) {
+    //         let mut chars = self.chars.clone();
+    //         let pos = chars.iter().position(|ch| ch == c);
+    //         pos.and_then(|pos| Some(chars[pos] = with.clone()));
+    //         //chars[pos] = with;
+    //         Battlefield { chars: chars, .. self }
+    //     } else if self.mobs.contains(c) {
+    //         let mut mobs = self.mobs.clone();
+    //         let pos = mobs.iter().position(|ch| ch == c);
+    //         pos.and_then(|pos| Some(mobs[pos] = with.clone()));
+    //         Battlefield { mobs: mobs, .. self }
+    //     } else {
+    //         panic!("Aieee!  Tried to replace nonexistent character!")
+    //     }
+    // }
 }
 
-fn do_attack(field: Battlefield, from: &Character, to: &Character) -> Battlefield {
-    println!("{} attacked {}!", from.name, to.name);
+fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) {
     // For now, damage equation is just:
     // damage dealt = atk/2 + [0:atk) - soak
     // soak = [0:def)
-    let raw_damage = (rand::random::<u32>() % from.atk) + (from.atk / 2);
-    let soak = rand::random::<u32>() % to.def;
-    if soak >= raw_damage {
+    // TODO: Better error handling here than unwrap()
+    let (damage, soak) = {
+        let fromchar = field.get(from).unwrap();
+        let tochar = field.get(to).unwrap();
+        println!("{} attacked {}!", fromchar.name, tochar.name);
+        let damage_ = (rand::random::<u32>() % fromchar.atk) + (fromchar.atk / 2);
+        let soak_ = rand::random::<u32>() % tochar.def;
+        //println!("Damage: {}, soak: {}", damage_, soak_);
+        (damage_, soak_)
+    };
+    if soak >= damage {
         println!("Did no damage!");
-        field
     } else {
-        let damage = raw_damage - soak;
-        println!("Hit!  Did {} damage!", damage);
-        let to2 = to.clone().take_damage(damage);
-        if !to2.is_alive() {
-            println!("{} perished!", to.name);
-            field.remove_char(to)
+        let resulting_damage = damage - soak;
+        println!("Hit!  Did {} damage!", resulting_damage);
+        let tochar = field.get_mut(to).unwrap();
+        tochar.take_damage(resulting_damage);
+        if !tochar.is_alive() {
+            println!("{} perished!", tochar.name);
+            //field.remove_char(to)
         } else {
-            field.replace_char(to, &to2)
+            //field.replace_char(to, &to2)
         }
     }
 }
 
-fn do_defend(field: Battlefield, who: &Character) -> Battlefield {
-    println!("{} defended themselves!", who.name);
-    field
+fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
+    // TODO: Better error handling here.
+    let whochar = field.get(who).unwrap();
+    println!("{} defended themselves!", whochar.name);
 }
 
-fn do_none(field: Battlefield) -> Battlefield {
+fn do_none(field: &mut Battlefield) {
     println!("Nothing happened!");
-    field
 }
 
 
-fn run_action(field: Battlefield, action: &Action) -> Battlefield {
-    let f = match *action {
+fn run_action(field: &mut Battlefield, action: &Action) {
+    match *action {
         Action::Attack(from, to) => do_attack(field, from, to),
         Action::Defend(who) => do_defend(field, who),
         Action::None => do_none(field),
     };
-    f.clone()
 }
 
 /// Runs a single turn in the battle.
 /// It takes a battlefield state, and a list of actions
 /// and applies the actions in order.
 /// It returns a new Battlefield state
-fn run_turn(field: Battlefield, actions: Vec<Action>) -> Battlefield {
+fn run_turn(field: &mut Battlefield, actions: Vec<Action>) {
     // We're going to want a sort-actions step, where we order the actions
     // by priority and character speed and such (defend's always take effect first, etc)
     // and THEN execute them.
-    let f = actions.iter()
-        .fold(field, run_action);
+    for action in actions {
+        run_action(field, &action);
+    }
     println!("");
-    f.increment_round()
+    field.increment_round();
 }
 
 
@@ -256,17 +273,16 @@ fn main() {
     let c1 = Character::new("Ragnar");
     let c2 = Character::new("Alena");
     let s = Character::new("Slime");
-    let b = Battlefield {
-        chars: vec![c1, c2],
-        mobs: vec![s],
+    let mut b = Battlefield {
+        chars: vec![c1, c2, s],
         round: 1
     };
-    let a1 = Action::Attack(&b.chars[0], &b.mobs[0]);
-    let a2 = Action::Attack(&b.mobs[0], &b.chars[1]);
-    let a3 = Action::Attack(&b.chars[1], &b.mobs[0]);
+    let a1 = Action::Attack(0, 2);
+    let a2 = Action::Attack(2, 0);
+    let a3 = Action::Attack(1, 2);
     println!("{}", b);
-    let b_ = run_turn(b.clone(), vec![a1, a2, a3]);
-    println!("{}", b_);
+    run_turn(&mut b, vec![a1, a2, a3]);
+    println!("{}", b);
     //println!("Hello, world! {}", c);
     //c.hp -= 12;
     //println!("Bye world! {}", c);
