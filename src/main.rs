@@ -188,7 +188,7 @@ impl Battlefield {
             pos.and_then(|pos| Some(mobs[pos] = with.clone()));
             Battlefield { mobs: mobs, .. self }
         } else {
-            panic!("Aieee!  Tried to remove nonexistent character!")
+            panic!("Aieee!  Tried to replace nonexistent character!")
         }
 
     }
@@ -262,9 +262,10 @@ fn main() {
         round: 1
     };
     let a1 = Action::Attack(&b.chars[0], &b.mobs[0]);
-    let a2 = Action::Defend(&b.mobs[0]);
+    let a2 = Action::Attack(&b.mobs[0], &b.chars[1]);
+    let a3 = Action::Attack(&b.chars[1], &b.mobs[0]);
     println!("{}", b);
-    let b_ = run_turn(b.clone(), vec![a1, a2]);
+    let b_ = run_turn(b.clone(), vec![a1, a2, a3]);
     println!("{}", b_);
     //println!("Hello, world! {}", c);
     //c.hp -= 12;
