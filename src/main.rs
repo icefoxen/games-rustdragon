@@ -2,11 +2,14 @@ use std::cmp;
 use std::fmt;
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 
+extern crate rand;
+use rand::random;
+
 /// Represents a u32 that is fixed to be between 0 and some max value.
 #[derive(Copy, Clone, Debug)]
 struct BoundedNumber {
     val: u32,
-    max: u32
+    max: u32,
 }
 
 impl BoundedNumber {
@@ -75,6 +78,17 @@ struct Character {
     name: String,
     hp: BoundedNumber,
     mp: BoundedNumber,
+
+    // Stats.
+    // Attack, how much damage you do
+    atk: u32,
+    // Defense, how much you reduce damage
+    def: u32,
+    // Speed, determines who goes first
+    spd: u32,
+    // Luck, determines critical hit chance
+    lck: u32,
+
 }
 
 
@@ -84,6 +98,23 @@ impl Character {
             name: String::from(name),
             hp: BoundedNumber::new(10),
             mp: BoundedNumber::new(10),
+
+            atk: 10,
+            def: 10,
+            spd: 10,
+            lck: 10
+
+        }
+    }
+
+    fn is_alive(&self) -> bool {
+        self.hp.val > 0
+    }
+
+    fn take_damage(self, damage: u32) -> Character {
+        Character {
+            hp: self.hp - damage,
+            .. self
         }
     }
 }
@@ -120,7 +151,7 @@ impl fmt::Display for Battlefield {
         for mob in &self.mobs {
             try!(writeln!(f, "  {}", mob));
         }
-        writeln!(f, "")
+        write!(f, "")
     }
 }
 
@@ -128,11 +159,37 @@ impl Battlefield {
     fn increment_round(self) -> Battlefield {
         Battlefield { round: self.round + 1, .. self }
     }
+
+    fn remove_char(self, c: &Character) -> Battlefield {
+        self
+    }
+
+    fn replace_char(self, c: &Character, with: &Character) -> Battlefield {
+        self
+    }
 }
 
 fn do_attack(field: Battlefield, from: &Character, to: &Character) -> Battlefield {
     println!("{} attacked {}!", from.name, to.name);
-    field
+    // For now, damage equation is just:
+    // damage dealt = atk/2 + [0:atk) - soak
+    // soak = [0:def)
+    let raw_damage = (rand::random::<u32>() % from.atk) + (from.atk / 2);
+    let soak = rand::random::<u32>() % to.def;
+    if soak >= raw_damage {
+        println!("Did no damage!");
+        field
+    } else {
+        let damage = raw_damage - soak;
+        println!("Hit!  Did {} damage!", damage);
+        let to2 = to.clone().take_damage(damage);
+        if !to2.is_alive() {
+            println!("{} perished!", to.name);
+            field.remove_char(to)
+        } else {
+            field.replace_char(to, &to2)
+        }
+    }
 }
 
 fn do_defend(field: Battlefield, who: &Character) -> Battlefield {
@@ -159,27 +216,31 @@ fn run_action(field: Battlefield, action: &Action) -> Battlefield {
 /// It takes a battlefield state, and a list of actions
 /// and applies the actions in order.
 /// It returns a new Battlefield state
-/// Do we want this mutable or not?
 fn run_turn(field: Battlefield, actions: Vec<Action>) -> Battlefield {
+    // We're going to want a sort-actions step, where we order the actions
+    // by priority and character speed and such (defend's always take effect first, etc)
+    // and THEN execute them.
     let f = actions.iter()
         .fold(field, run_action);
+    println!("");
     f.increment_round()
 }
 
 
 fn main() {
-    let c = Character::new("Ragnar");
+    let c1 = Character::new("Ragnar");
+    let c2 = Character::new("Alena");
     let s = Character::new("Slime");
     let b = Battlefield {
-        chars: vec![c],
+        chars: vec![c1, c2],
         mobs: vec![s],
         round: 1
     };
     let a1 = Action::Attack(&b.chars[0], &b.mobs[0]);
     let a2 = Action::Defend(&b.mobs[0]);
-    println!("Battlefield: {}", b);
+    println!("{}", b);
     let b_ = run_turn(b.clone(), vec![a1, a2]);
-    println!("Battlefield: {}", b_);
+    println!("{}", b_);
     //println!("Hello, world! {}", c);
     //c.hp -= 12;
     //println!("Bye world! {}", c);
