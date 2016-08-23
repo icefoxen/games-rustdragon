@@ -3,7 +3,7 @@ use std::fmt;
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 extern crate rand;
-use rand::random;
+//use rand::random;
 
 /// Represents a u32 that is fixed to be between 0 and some max value.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -115,6 +115,14 @@ impl Character {
     }
 }
 
+#[test]
+fn random_char_methods() {
+    let mut c = Character::new("Bob");
+    assert!(c.is_alive());
+    c.take_damage(1_000_000);
+    assert!(!c.is_alive());
+}
+
 impl fmt::Display for Character {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Name: {}, HP: {}, MP: {}", self.name, self.hp, self.mp)
@@ -132,7 +140,6 @@ type CharSpecifier = u32;
 enum Action {
     Attack(CharSpecifier, CharSpecifier),
     Defend(CharSpecifier),
-    None
 }
 
 /// The central structure containing a battle's state.
@@ -159,6 +166,12 @@ impl fmt::Display for Battlefield {
 }
 
 impl Battlefield {
+    fn new() -> Battlefield {
+        Battlefield {
+            chars: vec![],
+            round: 1,
+        }
+    }
     fn increment_round(&mut self) {
         self.round += 1
     }
@@ -170,38 +183,25 @@ impl Battlefield {
     fn get_mut<'a>(&'a mut self, c: CharSpecifier) -> Option<&'a mut Character> {
         self.chars.get_mut(c as usize)
     }
+}
 
-    // fn remove_char(self, c: &Character) -> Battlefield {
-    //     // This is messy but any alternative is also messy it seems, so.
-    //     if self.chars.conta) {
-    //         let mut chars = self.chars.clone();
-    //         chars.retain(|ch| ch != c);
-    //         Battlefield { chars: chars, .. self }
-    //     } else if self.mobs.contains(c) {
-    //         let mut mobs = self.mobs.clone();
-    //         mobs.retain(|ch| ch != c);
-    //         Battlefield { mobs: mobs, .. self }
-    //     } else {
-    //         panic!("Aieee!  Tried to remove nonexistent character!")
-    //     }
-    // }
+#[test]
+fn random_battlefield_methods() {
+    let mut b = Battlefield::new();
+    assert!(b.round == 1);
+    b.increment_round();
+    assert!(b.round == 2);
 
-    // fn replace_char(self, c: &Character, with: &Character) -> Battlefield {
-    //     if self.chars.contains(c) {
-    //         let mut chars = self.chars.clone();
-    //         let pos = chars.iter().position(|ch| ch == c);
-    //         pos.and_then(|pos| Some(chars[pos] = with.clone()));
-    //         //chars[pos] = with;
-    //         Battlefield { chars: chars, .. self }
-    //     } else if self.mobs.contains(c) {
-    //         let mut mobs = self.mobs.clone();
-    //         let pos = mobs.iter().position(|ch| ch == c);
-    //         pos.and_then(|pos| Some(mobs[pos] = with.clone()));
-    //         Battlefield { mobs: mobs, .. self }
-    //     } else {
-    //         panic!("Aieee!  Tried to replace nonexistent character!")
-    //     }
-    // }
+    {
+        let c1 = b.get(1);
+        assert!(c1 == None);
+    }
+    
+    b.chars.push(Character::new("Joe"));
+    {
+        let c2 = b.get(0);
+        assert!(c2 != None);
+    }
 }
 
 fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) {
@@ -240,16 +240,11 @@ fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
     println!("{} defended themselves!", whochar.name);
 }
 
-fn do_none(field: &mut Battlefield) {
-    println!("Nothing happened!");
-}
-
 
 fn run_action(field: &mut Battlefield, action: &Action) {
     match *action {
         Action::Attack(from, to) => do_attack(field, from, to),
         Action::Defend(who) => do_defend(field, who),
-        Action::None => do_none(field),
     };
 }
 
