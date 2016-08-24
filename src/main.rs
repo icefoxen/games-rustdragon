@@ -226,7 +226,6 @@ fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSpecif
     if !tochar.is_alive() {
         tochar
     } else {
-        
         tochar
     }
 }
@@ -322,9 +321,9 @@ fn order_actions(field: &Battlefield, actions: &mut Vec<Action>) {
 
 /// Runs a single turn in the battle.
 /// It takes a battlefield state, and a list of actions
-/// and applies the actions in order.
-/// It returns a new Battlefield state
-fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) {
+/// and applies the actions in the proper order.
+/// It returns true when the battle is over.
+fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> bool {
     // We're going to want a sort-actions step, where we order the actions
     // by priority and character speed and such (defend's always take effect first, etc)
     // and THEN execute them.
@@ -333,14 +332,14 @@ fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) {
         // If the battle is over, we stop where we are!
         // Partially 'cause any remaining actions will be invalid.
         if field.battle_is_over() {
-            println!("Victory!\n");
-            return;
+            return true;
         }
 
         run_action(field, &action);
     }
     println!("");
     field.increment_round();
+    false
 }
 
 
@@ -357,12 +356,20 @@ fn main() {
     let a2 = Action::Defend(2);
     let a3 = Action::Attack(1, 2);
     let mut actions1 = vec![a1, a2, a3];
-    let mut actions2 = actions1.clone();
-    println!("{}", b);
-    run_turn(&mut b, &mut actions1);
-    println!("{}", b);
-    run_turn(&mut b, &mut actions2);
-    println!("{}", b);
+    loop {
+        println!("{}", b);
+        if run_turn(&mut b, &mut actions1) {
+            println!("Victory!\n");
+            println!("{}", b);
+            break;
+        }
+    };
+    //let mut actions2 = actions1.clone();
+
+    //run_turn(&mut b, &mut actions1);
+    //println!("{}", b);
+    //run_turn(&mut b, &mut actions2);
+    //println!("{}", b);
     //println!("Hello, world! {}", c);
     //c.hp -= 12;
     //println!("Bye world! {}", c);
