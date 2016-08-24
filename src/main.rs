@@ -154,17 +154,17 @@ impl Action {
     /// Defines the priority of actions, the order
     /// in which they will be taken.
     /// Higher priority goes first.
-    fn priority(self) -> i32 {
-        match self {
-            Action::Attack(_) -> 0,
-            Action::Defend(_) -> 10,
+    fn priority(&self) -> i32 {
+        match *self {
+            Action::Attack(..) => 0,
+            Action::Defend(_) => 10,
         }
     }
 
-    fn source(self) -> CharSpecifier {
-        match self {
-            Action::Attack(from, _) -> from,
-            Action::Defend(who) -> who,
+    fn source(&self) -> CharSpecifier {
+        match *self {
+            Action::Attack(from, _) => from,
+            Action::Defend(who) => who,
         }
     }
 
@@ -244,6 +244,15 @@ impl Battlefield {
         }
         self.chars.iter().filter(is_monster)
     }
+
+    /// Return an iterator containing the opponents of whichever
+    /// character you pass to it.
+    fn opponents<'a>(&'a self, character: &Character) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+        match character.team {
+            Team::Player => self.monsters(),
+            Team::Monster => self.players(),
+        }
+    }
 }
 
 #[test]
@@ -265,7 +274,17 @@ fn random_battlefield_methods() {
     }
 }
 
+/// Does exactly what it says on the tin.
+/// If the 'to' character specified is not alive,
+/// choose another target at random (that isn't on the same team)
+/// and returns it.
+fn choose_new_target_if_target_is_dead(field: &Battlefield, from: CharSpecifier, to: CharSpecifier) -> CharSpecifier {
+    to
+}
+
 fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) {
+    let newto = choose_new_target_if_target_is_dead(field, from, to);
+    
     // For now, damage equation is just:
     // damage dealt = atk/2 + [0:atk) - soak
     // soak = [0:def)
@@ -305,10 +324,15 @@ fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
 
 
 fn run_action(field: &mut Battlefield, action: &Action) {
-    // Things we have to check:
-    // If the source of an action is dead, we skip it.
-    // If the target of an action is dead, we choose
-    // a new one at random.
+    // If the source of an action is dead, we skip the action.
+    {
+        let source = action.source();
+        let sourcechar = field.get(source).unwrap();
+        if !sourcechar.is_alive() {
+            return;
+        }
+    };
+        
     match *action {
         Action::Attack(from, to) => do_attack(field, from, to),
         Action::Defend(who) => do_defend(field, who),
@@ -320,12 +344,12 @@ fn run_action(field: &mut Battlefield, action: &Action) {
 /// Actions have priority, highest priority ones go first
 /// Then, characters with higher speed go befoer those with
 /// lower speed.
-fn order_actions(field: Battlefield, actions: &mut Vec<Action>) {
-    fn compare_actions(action1: &Action, action2: &Action) - i32 {
+fn order_actions(field: &Battlefield, actions: &mut Vec<Action>) {
+    let compare_actions = |action1: &Action, action2: &Action| {
         if action1.priority() > action2.priority() {
-            1
+            cmp::Ordering::Less
         } else if action1.priority() < action2.priority() {
-            -1
+            cmp::Ordering::Greater
         } else {
             // Actions have equal priority,
             // find out who is doing each action and go off
@@ -334,9 +358,17 @@ fn order_actions(field: Battlefield, actions: &mut Vec<Action>) {
             let charspec2 = action2.source();
             let char1 = field.get(charspec1).unwrap();
             let char2 = field.get(charspec2).unwrap();
-            char1.spd.compare(char2.spd)
+            // BUGGO:
+            // This is actually slightly wrong, because the sort is stable,
+            // so if the speeds are equal, the first one will always go first.
+            // Ideally it should be a coin-flip, or such...
+            // If we want to really do it Dragon Warrior style there should probably
+            // be a bit of unpredictability in the ordering here, too.
+            // Ah well, fine for now.
+            char2.spd.cmp(&char1.spd)
         }
-    }
+    };
+    actions.sort_by(compare_actions);
 
 }
 
@@ -344,10 +376,11 @@ fn order_actions(field: Battlefield, actions: &mut Vec<Action>) {
 /// It takes a battlefield state, and a list of actions
 /// and applies the actions in order.
 /// It returns a new Battlefield state
-fn run_turn(field: &mut Battlefield, actions: Vec<Action>) {
+fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) {
     // We're going to want a sort-actions step, where we order the actions
     // by priority and character speed and such (defend's always take effect first, etc)
     // and THEN execute them.
+    order_actions(field, actions);
     for action in actions {
         run_action(field, &action);
     }
@@ -358,17 +391,19 @@ fn run_turn(field: &mut Battlefield, actions: Vec<Action>) {
 
 fn main() {
     let c1 = Character::new("Ragnar", Team::Player);
-    let c2 = Character::new("Alena", Team::Player);
+    let mut c2 = Character::new("Alena", Team::Player);
+    c2.spd = 100;
     let s = Character::new("Slime", Team::Monster);
     let mut b = Battlefield {
         chars: vec![c1, c2, s],
         round: 1
     };
     let a1 = Action::Attack(0, 2);
-    let a2 = Action::Attack(2, 0);
+    let a2 = Action::Defend(2);
     let a3 = Action::Attack(1, 2);
+    let mut actions = vec![a1, a2, a3];
     println!("{}", b);
-    run_turn(&mut b, vec![a1, a2, a3]);
+    run_turn(&mut b, &mut actions);
     println!("{}", b);
     //println!("Hello, world! {}", c);
     //c.hp -= 12;
