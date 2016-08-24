@@ -81,6 +81,7 @@ type CharSpecifier = u32;
 // because what happens if a character dies before an attack goes off?
 // They need to be some sort of indirect reference so we can check
 // whether or not it's valid.
+#[derive(Debug, Clone, Copy)]
 enum Action {
     Attack(CharSpecifier, CharSpecifier),
     Defend(CharSpecifier),
@@ -183,11 +184,16 @@ impl Battlefield {
 
     /// Return an iterator containing the opponents of whichever
     /// character you pass to it.
-    fn opponents<'a>(&'a self, character: &Character) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
-        match character.team {
+    fn opponents<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+        match team {
             Team::Player => self.monsters(),
             Team::Monster => self.players(),
         }
+    }
+
+    fn battle_is_over(&self) -> bool {
+        self.players().filter(|x| x.is_alive()).count() == 0 ||
+            self.monsters().filter(|x| x.is_alive()).count() == 0
     }
 }
 
@@ -214,38 +220,43 @@ fn random_battlefield_methods() {
 /// If the 'to' character specified is not alive,
 /// choose another target at random (that isn't on the same team)
 /// and returns it.
-fn choose_new_target_if_target_is_dead(field: &Battlefield, from: CharSpecifier, to: CharSpecifier) -> CharSpecifier {
-    to
+fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) -> &mut Character {
+    let fromteam = field.get(from).unwrap().team;
+    let tochar = field.get_mut(to).unwrap();
+    if !tochar.is_alive() {
+        tochar
+    } else {
+        
+        tochar
+    }
 }
 
 fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) {
-    let newto = choose_new_target_if_target_is_dead(field, from, to);
-    
     // For now, damage equation is just:
     // damage dealt = atk/2 + [0:atk) - soak
     // soak = [0:def)
     // TODO: Better error handling here than unwrap()
-    let (damage, soak) = {
-        let fromchar = field.get(from).unwrap();
-        let tochar = field.get(to).unwrap();
+    let (damage, soak, tochar) = {
+        // This clone here is kind of squirrelly and I don't like it
+        // But I don't like how CharSpecifiers are working out anyway,
+        // so.
+        let fromchar = field.get(from).unwrap().clone();
+        let tochar = choose_new_target_if_target_is_dead(field, from, to);
         println!("{} attacked {}!", fromchar.name, tochar.name);
         let damage_ = (rand::random::<u32>() % fromchar.atk) + (fromchar.atk / 2);
         let soak_ = rand::random::<u32>() % tochar.def;
         //println!("Damage: {}, soak: {}", damage_, soak_);
-        (damage_, soak_)
+        (damage_, soak_, tochar)
     };
     if soak >= damage {
         println!("Did no damage!");
     } else {
         let resulting_damage = damage - soak;
         println!("Hit!  Did {} damage!", resulting_damage);
-        let tochar = field.get_mut(to).unwrap();
+        //let tochar = field.get_mut(to).unwrap();
         tochar.take_damage(resulting_damage);
         if !tochar.is_alive() {
             println!("{} perished!", tochar.name);
-            //field.remove_char(to)
-        } else {
-            //field.replace_char(to, &to2)
         }
     }
 }
@@ -273,6 +284,7 @@ fn run_action(field: &mut Battlefield, action: &Action) {
         Action::Attack(from, to) => do_attack(field, from, to),
         Action::Defend(who) => do_defend(field, who),
     };
+
 }
 
 ///Takes a Vec<Action> and reorders it into the order
@@ -318,6 +330,13 @@ fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) {
     // and THEN execute them.
     order_actions(field, actions);
     for action in actions {
+        // If the battle is over, we stop where we are!
+        // Partially 'cause any remaining actions will be invalid.
+        if field.battle_is_over() {
+            println!("Victory!\n");
+            return;
+        }
+
         run_action(field, &action);
     }
     println!("");
@@ -337,9 +356,12 @@ fn main() {
     let a1 = Action::Attack(0, 2);
     let a2 = Action::Defend(2);
     let a3 = Action::Attack(1, 2);
-    let mut actions = vec![a1, a2, a3];
+    let mut actions1 = vec![a1, a2, a3];
+    let mut actions2 = actions1.clone();
     println!("{}", b);
-    run_turn(&mut b, &mut actions);
+    run_turn(&mut b, &mut actions1);
+    println!("{}", b);
+    run_turn(&mut b, &mut actions2);
     println!("{}", b);
     //println!("Hello, world! {}", c);
     //c.hp -= 12;

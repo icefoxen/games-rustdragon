@@ -61,7 +61,7 @@ impl fmt::Display for BoundedNumber {
 
 #[cfg(test)]
 mod tests {
-    use bounded_number::BoundedNumber;
+    use super::BoundedNumber;
     #[test]
     fn bounded_number_is_bounded() {
         let max = 100;
