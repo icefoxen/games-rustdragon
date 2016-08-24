@@ -150,6 +150,26 @@ enum Action {
     Defend(CharSpecifier),
 }
 
+impl Action {
+    /// Defines the priority of actions, the order
+    /// in which they will be taken.
+    /// Higher priority goes first.
+    fn priority(self) -> i32 {
+        match self {
+            Action::Attack(_) -> 0,
+            Action::Defend(_) -> 10,
+        }
+    }
+
+    fn source(self) -> CharSpecifier {
+        match self {
+            Action::Attack(from, _) -> from,
+            Action::Defend(who) -> who,
+        }
+    }
+
+}
+
 /// The central structure containing a battle's state.
 #[derive(Debug, Clone)]
 struct Battlefield {
@@ -282,11 +302,42 @@ fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
 }
 
 
+
+
 fn run_action(field: &mut Battlefield, action: &Action) {
+    // Things we have to check:
+    // If the source of an action is dead, we skip it.
+    // If the target of an action is dead, we choose
+    // a new one at random.
     match *action {
         Action::Attack(from, to) => do_attack(field, from, to),
         Action::Defend(who) => do_defend(field, who),
     };
+}
+
+///Takes a Vec<Action> and reorders it into the order
+/// in which they should be executed in the fight:
+/// Actions have priority, highest priority ones go first
+/// Then, characters with higher speed go befoer those with
+/// lower speed.
+fn order_actions(field: Battlefield, actions: &mut Vec<Action>) {
+    fn compare_actions(action1: &Action, action2: &Action) - i32 {
+        if action1.priority() > action2.priority() {
+            1
+        } else if action1.priority() < action2.priority() {
+            -1
+        } else {
+            // Actions have equal priority,
+            // find out who is doing each action and go off
+            // the faster one.
+            let charspec1 = action1.source();
+            let charspec2 = action2.source();
+            let char1 = field.get(charspec1).unwrap();
+            let char2 = field.get(charspec2).unwrap();
+            char1.spd.compare(char2.spd)
+        }
+    }
+
 }
 
 /// Runs a single turn in the battle.
