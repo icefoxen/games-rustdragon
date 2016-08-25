@@ -169,28 +169,27 @@ impl Battlefield {
         // trait return value rather than a specific type
         // And you can't use instance methods as if they
         // were class methods, either.
-        fn is_player(p: &&Character) -> bool {
-            p.team == Team::Player
-        }
-        self.chars.iter().filter(is_player)
+
+        self.get_team(Team::Player)
     }
 
     fn monsters<'a>(&'a self) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
-        fn is_monster(p: &&Character) -> bool {
-            p.team == Team::Monster
-        }
-        self.chars.iter().filter(is_monster)
+        self.get_team(Team::Monster)
     }
 
     fn get_team<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
-        fn is_on_team(p: &&Character) -> bool {
-            p.team == team
+                
+        fn is_player(p: &&Character) -> bool {
+            p.team == Team::Player
         }
-        // Grr, this won't work, it's a closure...
-        // And I'm not sure how to make it not a closure!
-        // ...Okay, yes, I do, make is_player and is_monster in
-        // this method and match the team.
-        self.chars.iter().filter(is_on_team)
+                
+        fn is_monster(p: &&Character) -> bool {
+            p.team == Team::Monster
+        }
+        match team {
+            Team::Player => self.chars.iter().filter(is_player),
+            Team::Monster => self.chars.iter().filter(is_monster)
+        }
     }
 
     /// Return an iterator containing the opponents of whichever
@@ -234,7 +233,7 @@ fn random_battlefield_methods() {
 fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) -> &mut Character {
     let tochar = field.get_mut(to).unwrap();
     if !tochar.is_alive() {
-        let fromteam = field.get(from).unwrap().team;
+        //let fromteam = field.get(from).unwrap().team;
         // Now we need to get opponents and select one at random.
         // We check if the battle is over before every action, so
         // there should always be at least *one* opponent to choose from.
