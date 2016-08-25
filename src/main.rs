@@ -182,6 +182,17 @@ impl Battlefield {
         self.chars.iter().filter(is_monster)
     }
 
+    fn get_team<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+        fn is_on_team(p: &&Character) -> bool {
+            p.team == team
+        }
+        // Grr, this won't work, it's a closure...
+        // And I'm not sure how to make it not a closure!
+        // ...Okay, yes, I do, make is_player and is_monster in
+        // this method and match the team.
+        self.chars.iter().filter(is_on_team)
+    }
+
     /// Return an iterator containing the opponents of whichever
     /// character you pass to it.
     fn opponents<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
@@ -221,9 +232,12 @@ fn random_battlefield_methods() {
 /// choose another target at random (that isn't on the same team)
 /// and returns it.
 fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) -> &mut Character {
-    let fromteam = field.get(from).unwrap().team;
     let tochar = field.get_mut(to).unwrap();
     if !tochar.is_alive() {
+        let fromteam = field.get(from).unwrap().team;
+        // Now we need to get opponents and select one at random.
+        // We check if the battle is over before every action, so
+        // there should always be at least *one* opponent to choose from.
         tochar
     } else {
         tochar
@@ -239,6 +253,9 @@ fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) {
         // This clone here is kind of squirrelly and I don't like it
         // But I don't like how CharSpecifiers are working out anyway,
         // so.
+        // This clone is actually necessary, 'cause fromchar and tochar
+        // could actually be the same character, in which case we'd have
+        // borrowed it twice which is a no-no.
         let fromchar = field.get(from).unwrap().clone();
         let tochar = choose_new_target_if_target_is_dead(field, from, to);
         println!("{} attacked {}!", fromchar.name, tochar.name);
