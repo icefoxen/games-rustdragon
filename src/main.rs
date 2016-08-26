@@ -192,18 +192,15 @@ impl Battlefield {
         }
     }
 
-    /// Return an iterator containing the opponents of whichever
-    /// team you pass to it.
-    fn opponents<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+    fn get_opponents<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
         match team {
-            Team::Player => self.monsters(),
-            Team::Monster => self.players(),
+            Team::Player => self.get_team(Team::Monster),
+            Team::Monster => self.get_team(Team::Player)
         }
     }
 
-    fn battle_is_over(&self) -> bool {
-        self.players().filter(|x| x.is_alive()).count() == 0 ||
-            self.monsters().filter(|x| x.is_alive()).count() == 0
+    fn team_victorious(&self, team: Team) -> bool {
+        self.get_opponents(team).filter(|x| x.is_alive()).count() == 0
     }
 }
 
@@ -229,24 +226,33 @@ fn random_battlefield_methods() {
 /// Does exactly what it says on the tin.
 /// If the 'to' character specified is not alive,
 /// choose another target at random (that isn't on the same team)
-/// and returns it.
-fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) -> &mut Character {
+/// and returns a CharSpecifier referring to it.
+fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) -> CharSpecifier {
     let fromteam = field.get(from).unwrap().team;
     let tochar_is_alive = field.get(to).unwrap().is_alive();
     if !tochar_is_alive {
         // Now we need to get opponents and select one at random.
         // We check if the battle is over before every action, so
         // there should always be at least *one* opponent to choose from.
-        //let mut sample = {
-        //    let target_team = field.opponents(fromteam);
-        //    let mut rng = rand::thread_rng();
-        //    rand::sample(&mut rng, target_team, 1)
-        //};
-        //sample.get_mut(0).unwrap()
 
-        field.get_mut(to).unwrap()
+        // After writing all these nice iterators we can't use them 'cause
+        // we need to get the character *index*, so we need to stick an
+        // enumerate() in there.
+        // Sigh.
+        let living_enemies = field.chars.iter()
+            .enumerate()
+            .filter(|&(_, chr)| chr.team != fromteam)
+            .filter(|&(_, chr)| chr.is_alive());
+
+        let mut rng = rand::thread_rng();
+        let sample = rand::sample(&mut rng, living_enemies, 1);
+        // We always check for victory before each action, so,
+        // there should always be at least opponent available to
+        // choose from.
+        let (i, _) = sample[0];
+        i as CharSpecifier
     } else {
-        field.get_mut(to).unwrap()
+        to
     }
 }
 
@@ -269,8 +275,11 @@ fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) {
     }
     let damage = (rand::random::<u32>() % atk) + (atk / 2);
     
-    let defender = choose_new_target_if_target_is_dead(field, from, to);
+    let defender_idx = choose_new_target_if_target_is_dead(field, from, to);
+    let defender = field.get_mut(defender_idx).unwrap();
     let soak = rand::random::<u32>() % defender.def;
+
+    print!("{} attacked {}!  ", attacker_name, defender.name);
     if soak >= damage {
         println!("Did no damage!");
     } else {
@@ -342,11 +351,19 @@ fn order_actions(field: &Battlefield, actions: &mut Vec<Action>) {
 
 }
 
+enum BattleStatus {
+    PlayerVictory,
+    MonsterVictory,
+    Continuing,
+    // PlayersFled,
+    // MonstersFled
+}
+
 /// Runs a single turn in the battle.
 /// It takes a battlefield state, and a list of actions
 /// and applies the actions in the proper order.
-/// It returns true when the battle is over.
-fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> bool {
+/// It returns a battle status.
+fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> BattleStatus {
     // We're going to want a sort-actions step, where we order the actions
     // by priority and character speed and such (defend's always take effect first, etc)
     // and THEN execute them.
@@ -354,15 +371,18 @@ fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> bool {
     for action in actions {
         // If the battle is over, we stop where we are!
         // Partially 'cause any remaining actions will be invalid.
-        if field.battle_is_over() {
-            return true;
+        if field.team_victorious(Team::Player) {
+            return BattleStatus::PlayerVictory;
+        }
+        else if field.team_victorious(Team::Monster) {
+            return BattleStatus::MonsterVictory;
         }
 
         run_action(field, &action);
     }
     println!("");
     field.increment_round();
-    false
+    BattleStatus::Continuing
 }
 
 
@@ -370,30 +390,26 @@ fn main() {
     let c1 = Character::new("Ragnar", Team::Player);
     let mut c2 = Character::new("Alena", Team::Player);
     c2.spd = 100;
-    let s = Character::new("Slime", Team::Monster);
-    let mut b = Battlefield {
-        chars: vec![c1, c2, s],
-        round: 1
-    };
+    let m1 = Character::new("Slime", Team::Monster);
+    let m2 = Character::new("Bat", Team::Monster);
+    let mut b = Battlefield::new();
+    b.chars = vec![c1, c2, m1, m2];
     let a1 = Action::Attack(0, 2);
     let a2 = Action::Defend(2);
     let a3 = Action::Attack(1, 2);
     let mut actions1 = vec![a1, a2, a3];
     loop {
         println!("{}", b);
-        if run_turn(&mut b, &mut actions1) {
-            println!("Victory!\n");
-            println!("{}", b);
-            break;
+        match run_turn(&mut b, &mut actions1) {
+            BattleStatus::PlayerVictory => {
+                println!("Victory!\n");
+                break;
+            },
+            BattleStatus::MonsterVictory => {
+                println!("Horrible, crushing defeat!\n");
+                break;
+            }
+            _ => ()
         }
     };
-    //let mut actions2 = actions1.clone();
-
-    //run_turn(&mut b, &mut actions1);
-    //println!("{}", b);
-    //run_turn(&mut b, &mut actions2);
-    //println!("{}", b);
-    //println!("Hello, world! {}", c);
-    //c.hp -= 12;
-    //println!("Bye world! {}", c);
 }
