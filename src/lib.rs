@@ -1,4 +1,5 @@
 pub mod bounded_number;
+pub mod character;
 
 
 

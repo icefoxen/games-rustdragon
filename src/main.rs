@@ -5,73 +5,8 @@ extern crate rand;
 //use rand::random;
 
 extern crate rustdragon;
-use rustdragon::bounded_number::BoundedNumber;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Team {
-    Player,
-    Monster
-}
-
-#[derive(Debug, Clone, PartialEq)]
-struct Character {
-    name: String,
-    hp: BoundedNumber,
-    mp: BoundedNumber,
-
-    team: Team,
-
-    // Stats.
-    // Attack, how much damage you do
-    atk: u32,
-    // Defense, how much you reduce damage
-    def: u32,
-    // Speed, determines who goes first
-    spd: u32,
-    // Luck, determines critical hit chance
-    lck: u32,
-}
-
-
-impl Character {
-    fn new(name: &str, team: Team) -> Character {
-        Character {
-            name: String::from(name),
-            hp: BoundedNumber::new(10),
-            mp: BoundedNumber::new(10),
-
-            team: team,
-
-            atk: 10,
-            def: 10,
-            spd: 10,
-            lck: 10
-
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        self.hp.val > 0
-    }
-
-    fn take_damage(&mut self, damage: u32) {
-        self.hp -= damage;
-    }
-}
-
-#[test]
-fn random_char_methods() {
-    let mut c = Character::new("Bob", Team::Monster);
-    assert!(c.is_alive());
-    c.take_damage(1_000_000);
-    assert!(!c.is_alive());
-}
-
-impl fmt::Display for Character {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Name: {}, HP: {}, MP: {}", self.name, self.hp, self.mp)
-    }
-}
+use rustdragon::character::*;
 
 /// A structure that specifies a specific character in a Battlefield.
 type CharSpecifier = u32;
