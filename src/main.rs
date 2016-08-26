@@ -1,3 +1,5 @@
+use std::io;
+
 extern crate rustdragon;
 
 use rustdragon::character::*;
@@ -12,6 +14,33 @@ enum BattleStatus {
     Continuing,
     // PlayersFled,
     // MonstersFled
+}
+
+fn parse_action(c: &Character, i: CharSpecifier, s: &str) -> Action {
+    Action::Defend(0)
+}
+
+fn read_player_actions(field: &Battlefield, actions: &mut Vec<Action>) {
+    let living_players = field.get_team_enumerate(Team::Player)
+        .filter(|&(_, chr)| chr.is_alive());
+
+    for (i,c) in living_players {
+        let mut input = String::new();
+        println!("Input action for {}", c.name);
+        io::stdin().read_line(&mut input);
+        println!("Read: '{}'", input);
+        parse_action(c, i, input.as_str());
+    }
+}
+
+fn decide_monster_actions(field: &Battlefield, actions: &mut Vec<Action>) {
+    let living_monsters = field.get_team_enumerate(Team::Monster)
+        .filter(|&(_, chr)| chr.is_alive());
+
+    for (i,c) in living_monsters {
+        let action = Action::Defend(i);
+        actions.push(action);
+    }
 }
 
 /// Runs a single turn in the battle.
@@ -56,10 +85,14 @@ fn mainloop(mut field: Battlefield) {
     let a3 = Action::Attack(1, 2);
     let mut actions1 = vec![a1, a2, a3];
 
+    let mut actions = Vec::new();
     loop {
         println!("");
         println!("{}", field);
-        match run_turn(&mut field, &mut actions1) {
+        actions.clear();
+        read_player_actions(&field, &mut actions);
+        decide_monster_actions(&field, &mut actions);
+        match run_turn(&mut field, &mut actions) {
             BattleStatus::PlayerVictory => {
                 println!("Victory!\n");
                 break;

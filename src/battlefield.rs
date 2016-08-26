@@ -12,10 +12,13 @@ pub struct Battlefield {
 }
 
 /// A structure that specifies a specific character in a Battlefield.
-pub type CharSpecifier = u32;
+pub type CharSpecifier = usize;
 
 impl fmt::Display for Battlefield {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
+        // Oh man :#? is great
+        //try!(writeln!(f, "{:#?}", self));
 
         try!(writeln!(f, "Round {}", self.round));
         try!(writeln!(f, "Characters:"));
@@ -77,7 +80,6 @@ impl Battlefield {
         // trait return value rather than a specific type
         // And you can't use instance methods as if they
         // were class methods, either.
-
                 
         fn is_player(p: &&Character) -> bool {
             p.team == Team::Player
@@ -91,6 +93,29 @@ impl Battlefield {
             Team::Monster => self.chars.iter().filter(is_monster)
         }
     }
+
+    pub fn get_team_enumerate<'a>(&'a self, team: Team) -> std::iter::Filter<std::iter::Enumerate<std::slice::Iter<'a, Character>>, fn(&(usize, &Character)) -> bool> {
+        // Booooo returning the results of filter() is dumb
+        // 'cause you can't specify types of closures.
+        // Though apparently there's a feature in nightly
+        // as of August 2016 that allows you to specify a
+        // trait return value rather than a specific type
+        // And you can't use instance methods as if they
+        // were class methods, either.
+                
+        fn is_player(p: &(usize, &Character)) -> bool {
+            p.1.team == Team::Player
+        }
+                
+        fn is_monster(p: &(usize, &Character)) -> bool {
+            p.1.team == Team::Monster
+        }
+        match team {
+            Team::Player => self.chars.iter().enumerate().filter(is_player),
+            Team::Monster => self.chars.iter().enumerate().filter(is_monster)
+        }
+    }
+
 
     pub fn get_opponents<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
         match team {
