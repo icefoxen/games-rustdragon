@@ -193,7 +193,7 @@ impl Battlefield {
     }
 
     /// Return an iterator containing the opponents of whichever
-    /// character you pass to it.
+    /// team you pass to it.
     fn opponents<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
         match team {
             Team::Player => self.monsters(),
@@ -231,15 +231,22 @@ fn random_battlefield_methods() {
 /// choose another target at random (that isn't on the same team)
 /// and returns it.
 fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) -> &mut Character {
-    let tochar = field.get_mut(to).unwrap();
-    if !tochar.is_alive() {
-        //let fromteam = field.get(from).unwrap().team;
+    let fromteam = field.get(from).unwrap().team;
+    let tochar_is_alive = field.get(to).unwrap().is_alive();
+    if !tochar_is_alive {
         // Now we need to get opponents and select one at random.
         // We check if the battle is over before every action, so
         // there should always be at least *one* opponent to choose from.
-        tochar
+        //let mut sample = {
+        //    let target_team = field.opponents(fromteam);
+        //    let mut rng = rand::thread_rng();
+        //    rand::sample(&mut rng, target_team, 1)
+        //};
+        //sample.get_mut(0).unwrap()
+
+        field.get_mut(to).unwrap()
     } else {
-        tochar
+        field.get_mut(to).unwrap()
     }
 }
 
@@ -248,30 +255,30 @@ fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) {
     // damage dealt = atk/2 + [0:atk) - soak
     // soak = [0:def)
     // TODO: Better error handling here than unwrap()
-    let (damage, soak, tochar) = {
-        // This clone here is kind of squirrelly and I don't like it
-        // But I don't like how CharSpecifiers are working out anyway,
-        // so.
-        // This clone is actually necessary, 'cause fromchar and tochar
-        // could actually be the same character, in which case we'd have
-        // borrowed it twice which is a no-no.
-        let fromchar = field.get(from).unwrap().clone();
-        let tochar = choose_new_target_if_target_is_dead(field, from, to);
-        println!("{} attacked {}!", fromchar.name, tochar.name);
-        let damage_ = (rand::random::<u32>() % fromchar.atk) + (fromchar.atk / 2);
-        let soak_ = rand::random::<u32>() % tochar.def;
-        //println!("Damage: {}, soak: {}", damage_, soak_);
-        (damage_, soak_, tochar)
-    };
+    let atk;
+    let attacker_name;
+    {
+        let attacker = field.get(from).unwrap();
+        atk = attacker.atk;
+        // This clone is a little dumb, and we could get around
+        // it by breaking the following println!() up into parts.
+        // But that would be dumb and is not worth it.
+        // Since we can't have a reference to attacker and defender
+        // at the same time.
+        attacker_name = attacker.name.clone()
+    }
+    let damage = (rand::random::<u32>() % atk) + (atk / 2);
+    
+    let defender = choose_new_target_if_target_is_dead(field, from, to);
+    let soak = rand::random::<u32>() % defender.def;
     if soak >= damage {
         println!("Did no damage!");
     } else {
         let resulting_damage = damage - soak;
         println!("Hit!  Did {} damage!", resulting_damage);
-        //let tochar = field.get_mut(to).unwrap();
-        tochar.take_damage(resulting_damage);
-        if !tochar.is_alive() {
-            println!("{} perished!", tochar.name);
+        defender.take_damage(resulting_damage);
+        if !defender.is_alive() {
+            println!("{} perished!", defender.name);
         }
     }
 }
