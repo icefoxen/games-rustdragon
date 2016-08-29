@@ -19,6 +19,30 @@ enum BattleStatus {
 fn parse_action(c: &Character, i: CharSpecifier, s: &str) -> Action {
     Action::Defend(0)
 }
+fn print_possible_actions() {
+    println!(" 1) Attack");
+    println!(" 2) Defend");
+}
+
+fn read_attack(field: &Battlefield, i: CharSpecifier) -> Action {
+    // For now we just attack the first target
+    // that comes to hand.
+    Action::Attack(i, 0)
+}
+
+fn read_player_action(field: &Battlefield, i: CharSpecifier) -> Action {
+    print_possible_actions();
+    // This UI really needs a state machine.
+    // We'll just implement it the simple and dumb way.
+    let mut input = String::new();
+    io::stdin().read_line(&mut input);
+    let s : &str = input.as_str();
+    match s.next() {
+        '1' => read_attack(field, i),
+        '2' => Action::Defend(i),
+    }
+
+}
 
 fn read_player_actions(field: &Battlefield, actions: &mut Vec<Action>) {
     let living_players = field.get_team_enumerate(Team::Player)
@@ -29,7 +53,8 @@ fn read_player_actions(field: &Battlefield, actions: &mut Vec<Action>) {
         println!("Input action for {}", c.name);
         io::stdin().read_line(&mut input);
         println!("Read: '{}'", input);
-        parse_action(c, i, input.as_str());
+        let action = parse_action(c, i, input.as_str());
+        actions.push(action);
     }
 }
 
@@ -80,10 +105,10 @@ fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> BattleStatus 
 }
 
 fn mainloop(mut field: Battlefield) {
-    let a1 = Action::Attack(0, 2);
-    let a2 = Action::Defend(2);
-    let a3 = Action::Attack(1, 2);
-    let mut actions1 = vec![a1, a2, a3];
+//     let a1 = Action::Attack(0, 2);
+//     let a2 = Action::Defend(2);
+//     let a3 = Action::Attack(1, 2);
+//     let mut actions1 = vec![a1, a2, a3];
 
     let mut actions = Vec::new();
     loop {
