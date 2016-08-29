@@ -1,11 +1,11 @@
 use std::io;
 
+extern crate rand;
 extern crate rustdragon;
 
 use rustdragon::character::*;
 use rustdragon::battlefield::*;
 use rustdragon::action::*;
-
 
 
 enum BattleStatus {
@@ -16,18 +16,38 @@ enum BattleStatus {
     // MonstersFled
 }
 
-fn parse_action(c: &Character, i: CharSpecifier, s: &str) -> Action {
-    Action::Defend(0)
-}
 fn print_possible_actions() {
     println!(" 1) Attack");
     println!(" 2) Defend");
 }
 
 fn read_attack(field: &Battlefield, i: CharSpecifier) -> Action {
-    // For now we just attack the first target
-    // that comes to hand.
-    Action::Attack(i, 0)
+    // Print out the targets to attack
+    println!("Attack what?");
+    let living_monsters = field.get_team_enumerate(Team::Monster)
+        .filter(|&(_, chr)| chr.is_alive())
+        .collect::<Vec<(CharSpecifier, &Character)>>();
+    let mut j = 0;
+
+    for &(i,m) in living_monsters.iter() {
+        j += 1;
+        println!(" {}) {}", j, m.name);
+    }
+
+
+    // Read a numerical string and match it to a target
+    let mut input = String::new();
+    io::stdin().read_line(&mut input);
+    match input.trim().parse::<usize>() {
+        Ok(target) if target > 0 && target <= living_monsters.len() => {
+            let (idx, _) = living_monsters[target-1];
+            Action::Attack(i, idx)
+        },
+        _ => {
+            println!("Please enter a valid option!");
+            read_attack(field, i)
+        }
+    }
 }
 
 fn read_player_action(field: &Battlefield, i: CharSpecifier) -> Action {
@@ -36,10 +56,14 @@ fn read_player_action(field: &Battlefield, i: CharSpecifier) -> Action {
     // We'll just implement it the simple and dumb way.
     let mut input = String::new();
     io::stdin().read_line(&mut input);
-    let s : &str = input.as_str();
-    match s.next() {
-        '1' => read_attack(field, i),
-        '2' => Action::Defend(i),
+
+    match input.trim().parse::<usize>() {
+        Ok(1) => read_attack(field, i),
+        Ok(2) => Action::Defend(i),
+        _res  => {
+            println!("Please enter a valid option.");
+            read_player_action(field, i)
+        }
     }
 
 }
@@ -49,11 +73,8 @@ fn read_player_actions(field: &Battlefield, actions: &mut Vec<Action>) {
         .filter(|&(_, chr)| chr.is_alive());
 
     for (i,c) in living_players {
-        let mut input = String::new();
         println!("Input action for {}", c.name);
-        io::stdin().read_line(&mut input);
-        println!("Read: '{}'", input);
-        let action = parse_action(c, i, input.as_str());
+        let action = read_player_action(field, i);
         actions.push(action);
     }
 }
@@ -62,8 +83,17 @@ fn decide_monster_actions(field: &Battlefield, actions: &mut Vec<Action>) {
     let living_monsters = field.get_team_enumerate(Team::Monster)
         .filter(|&(_, chr)| chr.is_alive());
 
+    
     for (i,c) in living_monsters {
-        let action = Action::Defend(i);
+        let living_players = field.get_team_enumerate(Team::Player)
+            .filter(|&(_, chr)| chr.is_alive());
+        let mut rng = rand::thread_rng();
+        let sample = rand::sample(&mut rng, living_players, 1);
+        // We always check for victory before each action, so,
+        // there should always be at least opponent available to
+        // choose from.
+        let (targetidx, _) = sample[0];
+        let action = Action::Attack(i, targetidx);
         actions.push(action);
     }
 }
