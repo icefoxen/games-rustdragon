@@ -1,5 +1,5 @@
 use std::fmt;
-
+use std::collections::HashMap;
 
 use super::bounded_number::BoundedNumber;
 
@@ -9,16 +9,18 @@ pub enum Team {
     Monster
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BuffEffect {
-    StatUp(u32)
+/// A structure that contains every possible buff
+/// because there's no damn reason to manaeg them
+/// individually...?
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum BuffType {
+    Defend
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Buff {
-    pub turns_left: u32,
-    pub effect: BuffEffect
-}
+// #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+// pub struct BuffEffect {
+//     pub turns_left: u32
+// }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Character {
@@ -38,7 +40,8 @@ pub struct Character {
     // Luck, determines critical hit chance
     pub lck: u32,
 
-    pub buffs: Vec<Buff>,
+    // Buff type, duration
+    pub buffs: HashMap<BuffType, u32>,
 }
 
 
@@ -56,7 +59,7 @@ impl Character {
             spd: 10,
             lck: 10,
 
-            buffs: Vec::new()
+            buffs: HashMap::new()
 
         }
     }
@@ -73,17 +76,19 @@ impl Character {
     /// so this increments all the timers
     /// and removes the buffs that have timed out.
     pub fn tick_buffs(&mut self) {
-        let mut buffs_to_remove = Vec::new();
-        for (i,buff) in self.buffs.iter_mut().enumerate() {
-            if buff.turns_left == 0 {
+        // Might be a better way of doing this,
+        // but it works.
+        let mut buffs_to_remove : Vec<BuffType> = Vec::new();
+        for (buff, turns_left) in self.buffs.iter_mut() {
+            if *turns_left == 0 {
                 // remove buff
-                buffs_to_remove.push(i);
+                buffs_to_remove.push(*buff);
             } else {
-                buff.turns_left -= 1;
+                *turns_left -= 1;
             }
         }
-        for i in buffs_to_remove {
-            self.buffs.remove(i);
+        for buff in buffs_to_remove {
+            self.buffs.remove(&buff);
         }
     }
 }

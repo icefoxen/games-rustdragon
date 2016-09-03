@@ -111,11 +111,11 @@ pub fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
     // TODO: Better error handling here.
     let mut whochar = field.get_mut(who).unwrap();
     println!("{} defended themselves!", whochar.name);
-    let defbuff = Buff {
-        turns_left: 3,
-        effect: BuffEffect::StatUp(10)
-    };
-    whochar.buffs.push(defbuff)
+    // let defbuff = Buff {
+    //     turns_left: 3,
+    //     effect: BuffEffect::StatUp(10)
+    // };
+    // whochar.buffs.push(defbuff)
 }
 
 
