@@ -1,5 +1,6 @@
 //use std;
 use std::cmp;
+use super::character::*;
 use super::battlefield::*;
 
 extern crate rand;
@@ -108,8 +109,13 @@ pub fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier
 
 pub fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
     // TODO: Better error handling here.
-    let whochar = field.get(who).unwrap();
+    let mut whochar = field.get_mut(who).unwrap();
     println!("{} defended themselves!", whochar.name);
+    let defbuff = Buff {
+        turns_left: 3,
+        effect: BuffEffect::StatUp(10)
+    };
+    whochar.buffs.push(defbuff)
 }
 
 

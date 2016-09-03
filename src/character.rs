@@ -9,6 +9,17 @@ pub enum Team {
     Monster
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuffEffect {
+    StatUp(u32)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Buff {
+    pub turns_left: u32,
+    pub effect: BuffEffect
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Character {
     pub name: String,
@@ -26,6 +37,8 @@ pub struct Character {
     pub spd: u32,
     // Luck, determines critical hit chance
     pub lck: u32,
+
+    pub buffs: Vec<Buff>,
 }
 
 
@@ -41,7 +54,9 @@ impl Character {
             atk: 10,
             def: 10,
             spd: 10,
-            lck: 10
+            lck: 10,
+
+            buffs: Vec::new()
 
         }
     }
@@ -53,11 +68,34 @@ impl Character {
     pub fn take_damage(&mut self, damage: u32) {
         self.hp -= damage;
     }
+
+    /// Buffs have a timer,
+    /// so this increments all the timers
+    /// and removes the buffs that have timed out.
+    pub fn tick_buffs(&mut self) {
+        let mut buffs_to_remove = Vec::new();
+        for (i,buff) in self.buffs.iter_mut().enumerate() {
+            if buff.turns_left == 0 {
+                // remove buff
+                buffs_to_remove.push(i);
+            } else {
+                buff.turns_left -= 1;
+            }
+        }
+        for i in buffs_to_remove {
+            self.buffs.remove(i);
+        }
+    }
 }
 
 impl fmt::Display for Character {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Name: {}, HP: {}, MP: {}", self.name, self.hp, self.mp)
+        write!(f, "Name: {}, HP: {}, MP: {}", self.name, self.hp, self.mp);
+        if self.buffs.len() > 0 {
+            write!(f, "{:?}", self.buffs)
+        } else {
+            write!(f, "")
+        }
     }
 }
 
