@@ -98,11 +98,19 @@ fn decide_monster_actions(field: &Battlefield, actions: &mut Vec<Action>) {
     }
 }
 
+
+fn tick_buffs(field: &mut Battlefield) {
+    for c in field.chars.iter_mut() {
+        c.tick_buffs()
+    }
+}
+
 /// Runs a single turn in the battle.
 /// It takes a battlefield state, and a list of actions
 /// and applies the actions in the proper order.
 /// It returns a battle status.
 fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> BattleStatus {
+    tick_buffs(field);
     // We're going to want a sort-actions step, where we order the actions
     // by priority and character speed and such (defend's always take effect first, etc)
     // and THEN execute them.

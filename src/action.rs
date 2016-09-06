@@ -111,6 +111,7 @@ pub fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
     // TODO: Better error handling here.
     let mut whochar = field.get_mut(who).unwrap();
     println!("{} defended themselves!", whochar.name);
+    whochar.buffs.insert(BuffType::Defend, 5);
     // let defbuff = Buff {
     //     turns_left: 3,
     //     effect: BuffEffect::StatUp(10)
@@ -135,8 +136,8 @@ pub fn run_action(field: &mut Battlefield, action: &Action) {
         Action::Attack(from, to) => do_attack(field, from, to),
         Action::Defend(who) => do_defend(field, who),
     };
-
 }
+
 
 ///Takes a Vec<Action> and reorders it into the order
 /// in which they should be executed in the fight:

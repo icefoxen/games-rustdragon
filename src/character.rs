@@ -80,6 +80,7 @@ impl Character {
         // but it works.
         let mut buffs_to_remove : Vec<BuffType> = Vec::new();
         for (buff, turns_left) in self.buffs.iter_mut() {
+            println!("Buff {:?} has {} turns left", buff, turns_left);
             if *turns_left == 0 {
                 // remove buff
                 buffs_to_remove.push(*buff);
@@ -97,7 +98,7 @@ impl fmt::Display for Character {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Name: {}, HP: {}, MP: {}", self.name, self.hp, self.mp);
         if self.buffs.len() > 0 {
-            write!(f, "{:?}", self.buffs)
+            write!(f, " {:?}", self.buffs)
         } else {
             write!(f, "")
         }
