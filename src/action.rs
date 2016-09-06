@@ -111,7 +111,7 @@ pub fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
     // TODO: Better error handling here.
     let mut whochar = field.get_mut(who).unwrap();
     println!("{} defended themselves!", whochar.name);
-    whochar.buffs.insert(BuffType::Defend, 5);
+    whochar.add_buff(BuffType::Defend, 5);
     // let defbuff = Buff {
     //     turns_left: 3,
     //     effect: BuffEffect::StatUp(10)

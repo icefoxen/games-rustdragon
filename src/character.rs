@@ -1,5 +1,7 @@
 use std::fmt;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
+use std::cmp;
 
 use super::bounded_number::BoundedNumber;
 
@@ -91,6 +93,28 @@ impl Character {
         for buff in buffs_to_remove {
             self.buffs.remove(&buff);
         }
+    }
+
+    /// Add a buff on a character.
+    /// If it already exists, take the one with the longer
+    /// duration.
+    /// So, two instances of the same buff don't stack, it just
+    /// renews the buff to the max duration given.
+    pub fn add_buff(&mut self, buff: BuffType, duration: u32) {
+        //self.buffs.insert(buff, duration);
+        let entry = self.buffs.entry(buff);
+        match entry {
+            Entry::Vacant(_) => {
+                entry.or_insert(duration);
+            },
+            Entry::Occupied(e) => {
+                let val = e.into_mut();
+                let max = cmp::max(*val, duration);
+                *val = max;
+
+            }
+        }
+
     }
 }
 
