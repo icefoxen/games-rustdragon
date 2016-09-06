@@ -82,7 +82,7 @@ impl Character {
         // but it works.
         let mut buffs_to_remove : Vec<BuffType> = Vec::new();
         for (buff, turns_left) in self.buffs.iter_mut() {
-            println!("Buff {:?} has {} turns left", buff, turns_left);
+            //println!("Buff {:?} has {} turns left", buff, turns_left);
             if *turns_left == 0 {
                 // remove buff
                 buffs_to_remove.push(*buff);
@@ -114,7 +114,10 @@ impl Character {
 
             }
         }
+    }
 
+    pub fn has_buff(&self, buff: BuffType) -> bool {
+        self.buffs.contains_key(&buff)
     }
 }
 

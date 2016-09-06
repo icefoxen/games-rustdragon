@@ -94,11 +94,19 @@ pub fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier
     let defender = field.get_mut(defender_idx).unwrap();
     let soak = rand::random::<u32>() % defender.def;
 
+    let defending = defender.has_buff(BuffType::Defend);
+    let divider = if defending { 2 } else { 1 };
+    // Not sure whether the saturating_sub is perfect or inelegant...
+    // either way it's exactly what we want.
+    let resulting_damage = (damage / divider).saturating_sub(soak);
     print!("{} attacked {}!  ", attacker_name, defender.name);
-    if soak >= damage {
-        println!("Did no damage!");
+    if resulting_damage == 0 {
+        if defending {
+            println!("{} warded them off!", defender.name);
+        } else {
+            println!("Did no damage!");
+        }
     } else {
-        let resulting_damage = damage - soak;
         println!("Hit!  Did {} damage!", resulting_damage);
         defender.take_damage(resulting_damage);
         if !defender.is_alive() {
@@ -111,12 +119,7 @@ pub fn do_defend(field: &mut Battlefield, who: CharSpecifier) {
     // TODO: Better error handling here.
     let mut whochar = field.get_mut(who).unwrap();
     println!("{} defended themselves!", whochar.name);
-    whochar.add_buff(BuffType::Defend, 5);
-    // let defbuff = Buff {
-    //     turns_left: 3,
-    //     effect: BuffEffect::StatUp(10)
-    // };
-    // whochar.buffs.push(defbuff)
+    whochar.add_buff(BuffType::Defend, 0);
 }
 
 
