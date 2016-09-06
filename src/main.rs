@@ -110,7 +110,6 @@ fn tick_buffs(field: &mut Battlefield) {
 /// and applies the actions in the proper order.
 /// It returns a battle status.
 fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> BattleStatus {
-    tick_buffs(field);
     // We're going to want a sort-actions step, where we order the actions
     // by priority and character speed and such (defend's always take effect first, etc)
     // and THEN execute them.
@@ -150,8 +149,14 @@ fn mainloop(mut field: Battlefield) {
 
     let mut actions = Vec::new();
     loop {
+        // This has to happen before printing out the field,
+        // since it happens at the beginning of the turn and we
+        // don't want to print out-of-date info.
+        tick_buffs(&mut field);
+        
         println!("");
         println!("{}", field);
+        
         actions.clear();
         read_player_actions(&field, &mut actions);
         decide_monster_actions(&field, &mut actions);
