@@ -11,7 +11,7 @@ pub struct BoundedNumber {
 }
 
 impl BoundedNumber {
-    pub fn new(max:u32) -> BoundedNumber {
+    pub fn new(max: u32) -> BoundedNumber {
         BoundedNumber {
             val: max,
             max: max,

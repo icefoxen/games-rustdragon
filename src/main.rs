@@ -11,9 +11,8 @@ use rustdragon::action::*;
 enum BattleStatus {
     PlayerVictory,
     MonsterVictory,
-    Continuing,
-    // PlayersFled,
-    // MonstersFled
+    Continuing, /* PlayersFled,
+                 * MonstersFled */
 }
 
 fn print_possible_actions() {
@@ -29,20 +28,19 @@ fn read_attack(field: &Battlefield, i: CharSpecifier) -> Action {
         .collect::<Vec<(CharSpecifier, &Character)>>();
     let mut j = 0;
 
-    for &(i,m) in living_monsters.iter() {
+    for &(_, m) in living_monsters.iter() {
         j += 1;
         println!(" {}) {}", j, m.name);
     }
 
-
     // Read a numerical string and match it to a target
     let mut input = String::new();
-    io::stdin().read_line(&mut input);
+    let _ = io::stdin().read_line(&mut input);
     match input.trim().parse::<usize>() {
         Ok(target) if target > 0 && target <= living_monsters.len() => {
-            let (idx, _) = living_monsters[target-1];
+            let (idx, _) = living_monsters[target - 1];
             Action::Attack(i, idx)
-        },
+        }
         _ => {
             println!("Please enter a valid option!");
             read_attack(field, i)
@@ -55,24 +53,23 @@ fn read_player_action(field: &Battlefield, i: CharSpecifier) -> Action {
     // This UI really needs a state machine.
     // We'll just implement it the simple and dumb way.
     let mut input = String::new();
-    io::stdin().read_line(&mut input);
+    let _ = io::stdin().read_line(&mut input);
 
     match input.trim().parse::<usize>() {
         Ok(1) => read_attack(field, i),
         Ok(2) => Action::Defend(i),
-        _res  => {
+        _res => {
             println!("Please enter a valid option.");
             read_player_action(field, i)
         }
     }
-
 }
 
 fn read_player_actions(field: &Battlefield, actions: &mut Vec<Action>) {
     let living_players = field.get_team_enumerate(Team::Player)
         .filter(|&(_, chr)| chr.is_alive());
 
-    for (i,c) in living_players {
+    for (i, c) in living_players {
         println!("Input action for {}", c.name);
         let action = read_player_action(field, i);
         actions.push(action);
@@ -83,8 +80,7 @@ fn decide_monster_actions(field: &Battlefield, actions: &mut Vec<Action>) {
     let living_monsters = field.get_team_enumerate(Team::Monster)
         .filter(|&(_, chr)| chr.is_alive());
 
-    
-    for (i,c) in living_monsters {
+    for (i, _) in living_monsters {
         let living_players = field.get_team_enumerate(Team::Player)
             .filter(|&(_, chr)| chr.is_alive());
         let mut rng = rand::thread_rng();
@@ -119,8 +115,7 @@ fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> BattleStatus 
         // Partially 'cause any remaining actions will be invalid.
         if field.team_victorious(Team::Player) {
             return BattleStatus::PlayerVictory;
-        }
-        else if field.team_victorious(Team::Monster) {
+        } else if field.team_victorious(Team::Monster) {
             return BattleStatus::MonsterVictory;
         }
 
@@ -131,32 +126,25 @@ fn run_turn(field: &mut Battlefield, actions: &mut Vec<Action>) -> BattleStatus 
     // something off.
     if field.team_victorious(Team::Player) {
         return BattleStatus::PlayerVictory;
-    }
-    else if field.team_victorious(Team::Monster) {
+    } else if field.team_victorious(Team::Monster) {
         return BattleStatus::MonsterVictory;
     }
 
-    
     field.increment_round();
     BattleStatus::Continuing
 }
 
 fn mainloop(mut field: Battlefield) {
-//     let a1 = Action::Attack(0, 2);
-//     let a2 = Action::Defend(2);
-//     let a3 = Action::Attack(1, 2);
-//     let mut actions1 = vec![a1, a2, a3];
-
     let mut actions = Vec::new();
     loop {
         // This has to happen before printing out the field,
         // since it happens at the beginning of the turn and we
         // don't want to print out-of-date info.
         tick_buffs(&mut field);
-        
+
         println!("");
         println!("{}", field);
-        
+
         actions.clear();
         read_player_actions(&field, &mut actions);
         decide_monster_actions(&field, &mut actions);
@@ -164,14 +152,14 @@ fn mainloop(mut field: Battlefield) {
             BattleStatus::PlayerVictory => {
                 println!("Victory!\n");
                 break;
-            },
+            }
             BattleStatus::MonsterVictory => {
                 println!("Horrible, crushing defeat!\n");
                 break;
             }
-            _ => ()
+            _ => (),
         }
-    };
+    }
 }
 
 

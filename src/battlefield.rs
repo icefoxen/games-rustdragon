@@ -18,17 +18,17 @@ impl fmt::Display for Battlefield {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
         // Oh man :#? is great
-        //try!(writeln!(f, "{:#?}", self));
+        // try!(writeln!(f, "{:#?}", self));
 
         try!(writeln!(f, "Round {}", self.round));
         try!(writeln!(f, "Characters:"));
         for chr in self.players() {
             try!(writeln!(f, "  {}", chr));
-        };
+        }
         try!(writeln!(f, "Monsters:"));
         for mob in self.monsters() {
             try!(writeln!(f, "  {}", mob));
-        };
+        }
         write!(f, "")
     }
 }
@@ -63,16 +63,23 @@ impl Battlefield {
     // fn players<'a>(&'a self) ->
     //    impl Iterator<Item=&'a Character> {
     //        self.chars.iter().filter(|chr| chr.team == Team::Player)
-    //  } 
-    pub fn players<'a>(&'a self) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+    //  }
+    pub fn players<'a>
+        (&'a self)
+         -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
         self.get_team(Team::Player)
     }
 
-    pub fn monsters<'a>(&'a self) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+    pub fn monsters<'a>
+        (&'a self)
+         -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
         self.get_team(Team::Monster)
     }
 
-    pub fn get_team<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+    pub fn get_team<'a>
+        (&'a self,
+         team: Team)
+         -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
         // Booooo returning the results of filter() is dumb
         // 'cause you can't specify types of closures.
         // Though apparently there's a feature in nightly
@@ -80,21 +87,23 @@ impl Battlefield {
         // trait return value rather than a specific type
         // And you can't use instance methods as if they
         // were class methods, either.
-                
+
         fn is_player(p: &&Character) -> bool {
             p.team == Team::Player
         }
-                
+
         fn is_monster(p: &&Character) -> bool {
             p.team == Team::Monster
         }
         match team {
             Team::Player => self.chars.iter().filter(is_player),
-            Team::Monster => self.chars.iter().filter(is_monster)
+            Team::Monster => self.chars.iter().filter(is_monster),
         }
     }
 
-    pub fn get_team_enumerate<'a>(&'a self, team: Team) -> std::iter::Filter<std::iter::Enumerate<std::slice::Iter<'a, Character>>, fn(&(usize, &Character)) -> bool> {
+    pub fn get_team_enumerate<'a>(&'a self, team: Team) ->
+        std::iter::Filter<std::iter::Enumerate<std::slice::Iter<'a, Character>>,
+                          fn(&(usize, &Character)) -> bool> {
         // Booooo returning the results of filter() is dumb
         // 'cause you can't specify types of closures.
         // Though apparently there's a feature in nightly
@@ -102,25 +111,28 @@ impl Battlefield {
         // trait return value rather than a specific type
         // And you can't use instance methods as if they
         // were class methods, either.
-                
+
         fn is_player(p: &(usize, &Character)) -> bool {
             p.1.team == Team::Player
         }
-                
+
         fn is_monster(p: &(usize, &Character)) -> bool {
             p.1.team == Team::Monster
         }
         match team {
             Team::Player => self.chars.iter().enumerate().filter(is_player),
-            Team::Monster => self.chars.iter().enumerate().filter(is_monster)
+            Team::Monster => self.chars.iter().enumerate().filter(is_monster),
         }
     }
 
 
-    pub fn get_opponents<'a>(&'a self, team: Team) -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
+    pub fn get_opponents<'a>
+        (&'a self,
+         team: Team)
+         -> std::iter::Filter<std::slice::Iter<'a, Character>, fn(&&Character) -> bool> {
         match team {
             Team::Player => self.get_team(Team::Monster),
-            Team::Monster => self.get_team(Team::Player)
+            Team::Monster => self.get_team(Team::Player),
         }
     }
 
@@ -140,7 +152,7 @@ fn random_battlefield_methods() {
         let c1 = b.get(1);
         assert!(c1 == None);
     }
-    
+
     b.chars.push(Character::new("Joe", Team::Player));
     {
         let c2 = b.get(0);

@@ -1,10 +1,10 @@
-//use std;
+// use std;
 use std::cmp;
 use super::character::*;
 use super::battlefield::*;
 
 extern crate rand;
-//use rand::random;
+// use rand::random;
 
 
 // The Character direct references here are bad and wrong,
@@ -34,7 +34,6 @@ impl Action {
             Action::Defend(who) => who,
         }
     }
-
 }
 
 
@@ -42,7 +41,10 @@ impl Action {
 /// If the 'to' character specified is not alive,
 /// choose another target at random (that isn't on the same team)
 /// and returns a CharSpecifier referring to it.
-pub fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier) -> CharSpecifier {
+pub fn choose_new_target_if_target_is_dead(field: &mut Battlefield,
+                                           from: CharSpecifier,
+                                           to: CharSpecifier)
+                                           -> CharSpecifier {
     let fromteam = field.get(from).unwrap().team;
     let tochar_is_alive = field.get(to).unwrap().is_alive();
     if !tochar_is_alive {
@@ -54,7 +56,8 @@ pub fn choose_new_target_if_target_is_dead(field: &mut Battlefield, from: CharSp
         // we need to get the character *index*, so we need to stick an
         // enumerate() in there.
         // Sigh.
-        let living_enemies = field.chars.iter()
+        let living_enemies = field.chars
+            .iter()
             .enumerate()
             .filter(|&(_, chr)| chr.team != fromteam)
             .filter(|&(_, chr)| chr.is_alive());
@@ -89,7 +92,7 @@ pub fn do_attack(field: &mut Battlefield, from: CharSpecifier, to: CharSpecifier
         attacker_name = attacker.name.clone()
     }
     let damage = (rand::random::<u32>() % atk) + (atk / 2);
-    
+
     let defender_idx = choose_new_target_if_target_is_dead(field, from, to);
     let defender = field.get_mut(defender_idx).unwrap();
     let soak = rand::random::<u32>() % defender.def;
@@ -134,7 +137,7 @@ pub fn run_action(field: &mut Battlefield, action: &Action) {
             return;
         }
     };
-        
+
     match *action {
         Action::Attack(from, to) => do_attack(field, from, to),
         Action::Defend(who) => do_defend(field, who),
@@ -142,7 +145,7 @@ pub fn run_action(field: &mut Battlefield, action: &Action) {
 }
 
 
-///Takes a Vec<Action> and reorders it into the order
+/// Takes a Vec<Action> and reorders it into the order
 /// in which they should be executed in the fight:
 /// Actions have priority, highest priority ones go first
 /// Then, characters with higher speed go befoer those with

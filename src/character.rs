@@ -8,7 +8,7 @@ use super::bounded_number::BoundedNumber;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Team {
     Player,
-    Monster
+    Monster,
 }
 
 /// A structure that contains every possible buff
@@ -16,7 +16,7 @@ pub enum Team {
 /// individually...?
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BuffType {
-    Defend
+    Defend,
 }
 
 // #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,8 +61,7 @@ impl Character {
             spd: 10,
             lck: 10,
 
-            buffs: HashMap::new()
-
+            buffs: HashMap::new(),
         }
     }
 
@@ -80,9 +79,9 @@ impl Character {
     pub fn tick_buffs(&mut self) {
         // Might be a better way of doing this,
         // but it works.
-        let mut buffs_to_remove : Vec<BuffType> = Vec::new();
+        let mut buffs_to_remove: Vec<BuffType> = Vec::new();
         for (buff, turns_left) in self.buffs.iter_mut() {
-            //println!("Buff {:?} has {} turns left", buff, turns_left);
+            // println!("Buff {:?} has {} turns left", buff, turns_left);
             if *turns_left == 0 {
                 // remove buff
                 buffs_to_remove.push(*buff);
@@ -101,12 +100,12 @@ impl Character {
     /// So, two instances of the same buff don't stack, it just
     /// renews the buff to the max duration given.
     pub fn add_buff(&mut self, buff: BuffType, duration: u32) {
-        //self.buffs.insert(buff, duration);
+        // self.buffs.insert(buff, duration);
         let entry = self.buffs.entry(buff);
         match entry {
             Entry::Vacant(_) => {
                 entry.or_insert(duration);
-            },
+            }
             Entry::Occupied(e) => {
                 let val = e.into_mut();
                 let max = cmp::max(*val, duration);
@@ -139,5 +138,3 @@ fn random_char_methods() {
     c.take_damage(1_000_000);
     assert!(!c.is_alive());
 }
-
-
