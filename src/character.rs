@@ -65,6 +65,27 @@ impl Character {
         }
     }
 
+    pub fn new_with_stats(name: &str, team: Team,
+                          maxhp: u32, maxmp: u32,
+                          atk: u32, def: u32, spd: u32, lck: u32)
+                          -> Character {
+        Character {
+            name: String::from(name),
+            hp: BoundedNumber::new(maxhp),
+            mp: BoundedNumber::new(maxmp),
+
+            team: team,
+
+            atk: atk,
+            def: def,
+            spd: spd,
+            lck: lck,
+
+            buffs: HashMap::new(),
+        }
+    }
+
+
     pub fn is_alive(&self) -> bool {
         self.hp.val > 0
     }

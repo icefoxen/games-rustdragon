@@ -6,6 +6,7 @@ extern crate rustdragon;
 use rustdragon::character::*;
 use rustdragon::battlefield::*;
 use rustdragon::action::*;
+use rustdragon::battle_generator;
 
 
 enum BattleStatus {
@@ -164,12 +165,7 @@ fn mainloop(mut field: Battlefield) {
 
 
 fn main() {
-    let c1 = Character::new("Ragnar", Team::Player);
-    let mut c2 = Character::new("Alena", Team::Player);
-    c2.spd = 100;
-    let m1 = Character::new("Slime", Team::Monster);
-    let m2 = Character::new("Bat", Team::Monster);
-    let mut b = Battlefield::new();
-    b.chars = vec![c1, c2, m1, m2];
+
+    let b = battle_generator::generate();
     mainloop(b);
 }

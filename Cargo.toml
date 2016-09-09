@@ -5,3 +5,4 @@ authors = ["Simon Heath <icefoxen@gmail.com>"]
 
 [dependencies]
 rand = "*"
+lazy_static = "*"
