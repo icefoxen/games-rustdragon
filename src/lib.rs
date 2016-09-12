@@ -6,6 +6,7 @@ pub mod battle_generator;
 
 #[macro_use]
 extern crate lazy_static;
+extern crate rand;
 
 #[cfg(test)]
 mod tests {

@@ -3,6 +3,7 @@
 use super::character::*;
 use super::battlefield::*;
 
+use rand;
 
 
 // lazy_static is awesome.
@@ -91,13 +92,26 @@ lazy_static! {
 //    Character::new("Ragnar", Team::Player)
 //];
 
+fn select_players() -> Vec<&'static Character> {
+    let mut rng = rand::thread_rng();
+    let sample = rand::sample(&mut rng, (*PLAYERS).iter(), 4);
+    sample.clone()
+}
+
+fn select_monsters() -> Vec<&'static Character> {
+    let mut rng = rand::thread_rng();
+    let sample = rand::sample(&mut rng, (*MOBS).iter(), 3);
+    sample.clone()
+
+}
+
 pub fn generate() -> Battlefield {
-    //let c1 = Character::new("Ragnar", Team::Player);
-    //let mut c2 = Character::new("Alena", Team::Player);
-    //c2.spd = 100;
-    let m1 = Character::new("Slime", Team::Monster);
-    let m2 = Character::new("Bat", Team::Monster);
     let mut b = Battlefield::new();
-    b.chars = (*CHARS).clone(); //vec![c1, c2, m1, m2];
+    let players_refs = select_players();
+    let players: Vec<_> = players_refs.iter().map(|p|
+        (*p).clone()).collect();
+    let mut monsters = select_monsters();
+    //players.extend(monsters);
+    b.chars = players;
     b
 }
