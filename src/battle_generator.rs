@@ -12,15 +12,6 @@ use rand;
 // Will probably be made obsolete by const fn, but currently that's still in
 // nightly.
 lazy_static! {
-    static ref CHARS: Vec<Character> = {
-        let mut c = Vec::new();
-        c.push(Character::new("Ragnar", Team::Player));
-        c.push(Character::new("Alena", Team::Player));
-
-        c.push(Character::new("Slime", Team::Monster));
-        c.push(Character::new("Bat", Team::Monster));
-        c
-    };
 
     static ref PLAYERS: Vec<Character> = {
         let mut c = Vec::new();
@@ -107,11 +98,18 @@ fn select_monsters() -> Vec<&'static Character> {
 
 pub fn generate() -> Battlefield {
     let mut b = Battlefield::new();
-    let players_refs = select_players();
-    let players: Vec<_> = players_refs.iter().map(|p|
-        (*p).clone()).collect();
-    let mut monsters = select_monsters();
-    //players.extend(monsters);
+    // We need to make copies of the Character
+    // objects because they're going to get modified
+    // in the course of the battle.
+    let player_refs = select_players();
+    let mut players: Vec<_> = player_refs.iter()
+        .map(|p| (*p).clone())
+        .collect();
+    let monster_refs = select_monsters();
+    let monsters: Vec<_> = monster_refs.iter()
+        .map(|p| (*p).clone())
+        .collect();
+    players.extend(monsters);
     b.chars = players;
     b
 }
